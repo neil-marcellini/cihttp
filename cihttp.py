@@ -4,7 +4,7 @@
 
 # Project 2 - A Simple HTTP server.
 
-import socket, logging, threading
+import socket, logging, threading, json
 
 # Comment out the line below to not print the INFO messages
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +18,20 @@ class HttpRequest():
 
 
     def parse_string(self):
-        print(self.rstr)
+        lines = self.rstr.splitlines()
+        request_line = lines.pop(0)
+        blank_line_index = lines.index('')
+        headers = lines[:blank_line_index]
+        body = ''
+        if blank_line_index + 1 < len(lines):
+            body = lines[blank_line_index + 1:]
+        request_object = {
+            "request-line": request_line,
+            "headers": headers,
+            "body": body,
+        }
+        self.rjson = json.dumps(request_object, indent=4)
+
 
 
     def display_request(self):
