@@ -75,13 +75,15 @@ class HttpResponse():
         reason_pharse = "OK"
         status_line = " ".join([self.http_version, status_code, reason_pharse])
         content_len = len(file_bytes)
-        content_len_header = f"Content Length: {content_len}"
+        content_len_header = f"Content-Length: {content_len}"
         server_header = f"Server: {self.server}"
         print(f"content_len = {content_len}")
         last_modified_header = self.last_modified()
         body = file_bytes
-        response_str = "\r\n".join([status_line, content_len_header, server_header, last_modified_header, body])
+        response_str = "\r\n".join([status_line, content_len_header, server_header, last_modified_header, "", body])
         response = bytes(response_str, 'utf-8')
+        print("response bytes")
+        print(response)
         return response
 
     def post_response(self):
@@ -107,7 +109,7 @@ class HttpResponse():
         modified_time = os.path.getmtime(self.file_path)
         utc_datetime = datetime.datetime.utcfromtimestamp(modified_time)
         time_str = utc_datetime.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        last_modified = f"Last modified: {time_str}"
+        last_modified = f"Last-Modified: {time_str}"
         print(last_modified)
         return last_modified
 
