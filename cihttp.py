@@ -1,5 +1,5 @@
 # Neil Marcellini
-# 4/12/21
+# 4/15/21
 # COMP 429
 
 # Project 2 - A Simple HTTP server.
@@ -55,7 +55,7 @@ class HttpResponse():
             return self.post_response()
         request_uri = request_words.pop(0)
         if request_uri == "/":
-            request_uri = "/index.html"
+            request_uri = "index.html"
         file_bytes = self.read_file(request_uri)
         resource_exists = file_bytes is not None
         if not resource_exists:
@@ -177,6 +177,12 @@ class ClientThread(threading.Thread):
         request = self.csock.recv(1024)
         req = request.decode('utf-8')
         logging.info('Recieved a request from client: ' + req)
+        if req == '':
+            print("Empty request")
+            # disconnect client
+            self.csock.close()
+            logging.info('Disconnect client.')
+            return
 
         httpreq = HttpRequest(req)
 
