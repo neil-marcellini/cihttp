@@ -6,6 +6,7 @@
 
 import socket, logging, threading, json, os.path
 import datetime, time
+from urllib.parse import parse_qs
 # Comment out the line below to not print the INFO messages
 logging.basicConfig(level=logging.INFO)
 
@@ -18,13 +19,15 @@ class HttpRequest():
 
 
     def parse_string(self):
+        print("raw request")
+        print(bytes(self.rstr, 'utf-8'))
         lines = self.rstr.splitlines()
         request_line = lines.pop(0)
         blank_line_index = lines.index('')
         headers = lines[:blank_line_index]
         body = ''
         if blank_line_index + 1 < len(lines):
-            body = lines[blank_line_index + 1:]
+            body = lines[blank_line_index + 1]
         self.request_object = {
             "request-line": request_line,
             "headers": headers,
@@ -48,6 +51,8 @@ class HttpResponse():
         request_line = self.request.request_object["request-line"]
         request_words = request_line.split()
         method = request_words.pop(0)
+        if method == "POST":
+            return self.post_response()
         request_uri = request_words.pop(0)
         file_bytes = self.read_file(request_uri)
         resource_exists = file_bytes is not None
@@ -58,8 +63,6 @@ class HttpResponse():
             return self.head_response(file_bytes)
         elif method == "GET":
             return self.get_response(file_bytes)
-        elif method == "POST":
-            self.post_response()
         else:
             self.error_response()
     
@@ -71,6 +74,7 @@ class HttpResponse():
         response_components = []
         response_components.append(status_line)
         response_components.extend(headers)
+        # for extra \r\n after headers
         response_components.append("")
         response_str = "\r\n".join(response_components)
         response = bytes(response_str, 'utf-8')
@@ -90,12 +94,24 @@ class HttpResponse():
         response_components.append(body)
         response_str = "\r\n".join(response_components)
         response = bytes(response_str, 'utf-8')
-        print("get response bytes")
         print(response)
         return response
 
     def post_response(self):
-        pass
+        file_bytes = self.read_file("submission.html")
+        request = self.request.request_object
+        body = request["body"]
+        form_data = parse_qs(body)
+        name = ""
+        course = ""
+        if "name" in form_data:
+            name = form_data["name"][0]
+        if "course" in form_data:
+            course = form_data["course"][0]
+        file_bytes = file_bytes.replace("#name#", name)
+        file_bytes = file_bytes.replace("#course#", course)
+        return self.get_response(file_bytes)
+
 
     def error_response(self, file_bytes):
         status_line = " ".join([self.http_version, "404", "Not Found"])
@@ -110,7 +126,6 @@ class HttpResponse():
         print("error response bytes")
         print(response)
         return response
-        pass
 
 
     def get_headers(self, file_bytes):
