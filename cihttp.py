@@ -52,10 +52,10 @@ class HttpResponse():
         file_bytes = self.read_file(request_uri)
         resource_exists = file_bytes is not None
         if not resource_exists:
-            self.error_response()
-            return
+            file_bytes = self.read_file("404.html")
+            return self.error_response(file_bytes)
         if method == "HEAD":
-            self.head_response(file_bytes)
+            return self.head_response(file_bytes)
         elif method == "GET":
             return self.get_response(file_bytes)
         elif method == "POST":
@@ -66,36 +66,65 @@ class HttpResponse():
     def head_response(self, file_bytes):
         status_code = 200
         reason_pharse = "OK"
-        content_len = len(file_bytes)
-        print(f"content_len = {content_len}")
-        pass
+        status_line = " ".join([self.http_version, status_code, reason_pharse])
+        headers = self.get_headers(file_bytes)
+        response_components = []
+        response_components.append(status_line)
+        response_components.extend(headers)
+        response_str = "\r\n".join(response_components)
+        response = bytes(response_str, 'utf-8')
+        print("head response bytes")
+        print(response)
+        return response
 
     def get_response(self, file_bytes):
         status_code = "200"
         reason_pharse = "OK"
         status_line = " ".join([self.http_version, status_code, reason_pharse])
-        content_len = len(file_bytes)
-        content_len_header = f"Content-Length: {content_len}"
-        server_header = f"Server: {self.server}"
-        print(f"content_len = {content_len}")
-        last_modified_header = self.last_modified()
+        headers = self.get_headers(file_bytes)
         body = file_bytes
-        response_str = "\r\n".join([status_line, content_len_header, server_header, last_modified_header, "", body])
+        response_components = []
+        response_components.append(status_line)
+        response_components.extend(headers)
+        response_components.append(body)
+        response_str = "\r\n".join(response_components)
         response = bytes(response_str, 'utf-8')
-        print("response bytes")
+        print("get response bytes")
         print(response)
         return response
 
     def post_response(self):
         pass
 
-    def error_response(self):
+    def error_response(self, file_bytes):
         status_line = " ".join([self.http_version, "404", "Not Found"])
+        headers = self.get_headers(file_bytes)
+        body = file_bytes
+        response_components = []
+        response_components.append(status_line)
+        response_components.extend(headers)
+        response_components.append(body)
+        response_str = "\r\n".join(response_components)
+        response = bytes(response_str, 'utf-8')
+        print("error response bytes")
+        print(response)
+        return response
         pass
+
+
+    def get_headers(self, file_bytes):
+        content_len = len(file_bytes)
+        content_len_header = f"Content-Length: {content_len}"
+        server_header = f"Server: {self.server}"
+        last_modified_header = self.last_modified()
+        headers = [content_len_header, server_header, last_modified_header, ""]
+        return headers
+
 
     def read_file(self, request_uri):
         # look for the file at the given uri
         self.file_path = self.base_path + request_uri
+        print(f"file_path = {self.file_path}")
         file_exists = os.path.isfile(self.file_path)
         if not file_exists:
             return None
