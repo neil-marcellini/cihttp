@@ -43,7 +43,6 @@ class HttpResponse():
         self.http_version = "HTTP/1.1"
         self.server = "cihttp"
         self.base_path = 'www/'
-        self.response()
     
     def response(self):
         request_line = self.request.request_object["request-line"]
@@ -58,7 +57,7 @@ class HttpResponse():
         if method == "HEAD":
             self.head_response(file_bytes)
         elif method == "GET":
-            self.get_response(file_bytes)
+            return self.get_response(file_bytes)
         elif method == "POST":
             self.post_response()
         else:
@@ -72,12 +71,18 @@ class HttpResponse():
         pass
 
     def get_response(self, file_bytes):
-        status_code = 200
+        status_code = "200"
         reason_pharse = "OK"
+        status_line = " ".join([self.http_version, status_code, reason_pharse])
         content_len = len(file_bytes)
+        content_len_header = f"Content Length: {content_len}"
+        server_header = f"Server: {self.server}"
         print(f"content_len = {content_len}")
-        last_modified = self.last_modified()
-        pass
+        last_modified_header = self.last_modified()
+        body = file_bytes
+        response_str = "\r\n".join([status_line, content_len_header, server_header, last_modified_header, body])
+        response = bytes(response_str, 'utf-8')
+        return response
 
     def post_response(self):
         pass
@@ -129,9 +134,11 @@ class ClientThread(threading.Thread):
         httpreq.display_request()
 
         http_res = HttpResponse(httpreq)
+        response = http_res.response()
 
         # send a response
-        self.csock.send(b"HTTP/1.1 500 Not a real fake server (yet).\r\nServer: cihttpd\r\n\r\n<html><body><h1>500 Internal Server Error</h1><p>Garbage Tier Server.</p></body></html>")
+        #self.csock.send(b"HTTP/1.1 500 Not a real fake server (yet).\r\nServer: cihttpd\r\n\r\n<html><body><h1>500 Internal Server Error</h1><p>Garbage Tier Server.</p></body></html>")
+        self.csock.send(response)
 
         # disconnect client
         self.csock.close()
