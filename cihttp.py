@@ -64,13 +64,14 @@ class HttpResponse():
             self.error_response()
     
     def head_response(self, file_bytes):
-        status_code = 200
+        status_code = "200"
         reason_pharse = "OK"
         status_line = " ".join([self.http_version, status_code, reason_pharse])
         headers = self.get_headers(file_bytes)
         response_components = []
         response_components.append(status_line)
         response_components.extend(headers)
+        response_components.append("")
         response_str = "\r\n".join(response_components)
         response = bytes(response_str, 'utf-8')
         print("head response bytes")
