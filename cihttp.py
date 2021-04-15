@@ -4,8 +4,8 @@
 
 # Project 2 - A Simple HTTP server.
 
-import socket, logging, threading, json
-
+import socket, logging, threading, json, os.path
+import datetime, time
 # Comment out the line below to not print the INFO messages
 logging.basicConfig(level=logging.INFO)
 
@@ -25,17 +25,89 @@ class HttpRequest():
         body = ''
         if blank_line_index + 1 < len(lines):
             body = lines[blank_line_index + 1:]
-        request_object = {
+        self.request_object = {
             "request-line": request_line,
             "headers": headers,
             "body": body,
         }
-        self.rjson = json.dumps(request_object, indent=4)
+        self.rjson = json.dumps(self.request_object, indent=4)
 
 
 
     def display_request(self):
         print(self.rjson)
+
+class HttpResponse():
+    def __init__(self, request):
+        self.request = request
+        self.http_version = "HTTP/1.1"
+        self.server = "cihttp"
+        self.base_path = 'www/'
+        self.response()
+    
+    def response(self):
+        request_line = self.request.request_object["request-line"]
+        request_words = request_line.split()
+        method = request_words.pop(0)
+        request_uri = request_words.pop(0)
+        file_bytes = self.read_file(request_uri)
+        resource_exists = file_bytes is not None
+        if not resource_exists:
+            self.error_response()
+            return
+        if method == "HEAD":
+            self.head_response(file_bytes)
+        elif method == "GET":
+            self.get_response(file_bytes)
+        elif method == "POST":
+            self.post_response()
+        else:
+            self.error_response()
+    
+    def head_response(self, file_bytes):
+        status_code = 200
+        reason_pharse = "OK"
+        content_len = len(file_bytes)
+        print(f"content_len = {content_len}")
+        pass
+
+    def get_response(self, file_bytes):
+        status_code = 200
+        reason_pharse = "OK"
+        content_len = len(file_bytes)
+        print(f"content_len = {content_len}")
+        last_modified = self.last_modified()
+        pass
+
+    def post_response(self):
+        pass
+
+    def error_response(self):
+        status_line = " ".join([self.http_version, "404", "Not Found"])
+        pass
+
+    def read_file(self, request_uri):
+        # look for the file at the given uri
+        self.file_path = self.base_path + request_uri
+        file_exists = os.path.isfile(self.file_path)
+        if not file_exists:
+            return None
+        # open the file and return the bytes
+        with open(self.file_path) as f:
+            data = f.read()
+            return data
+    
+    def last_modified(self):
+        # return the last modified time of the file
+        modified_time = os.path.getmtime(self.file_path)
+        utc_datetime = datetime.datetime.utcfromtimestamp(modified_time)
+        time_str = utc_datetime.strftime('%a, %d %b %Y %H:%M:%S GMT')
+        last_modified = f"Last modified: {time_str}"
+        print(last_modified)
+        return last_modified
+
+
+        
 
 
 
@@ -55,6 +127,8 @@ class ClientThread(threading.Thread):
         httpreq = HttpRequest(req)
 
         httpreq.display_request()
+
+        http_res = HttpResponse(httpreq)
 
         # send a response
         self.csock.send(b"HTTP/1.1 500 Not a real fake server (yet).\r\nServer: cihttpd\r\n\r\n<html><body><h1>500 Internal Server Error</h1><p>Garbage Tier Server.</p></body></html>")
