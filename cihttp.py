@@ -54,6 +54,8 @@ class HttpResponse():
         if method == "POST":
             return self.post_response()
         request_uri = request_words.pop(0)
+        if request_uri == "/":
+            request_uri = "/index.html"
         file_bytes = self.read_file(request_uri)
         resource_exists = file_bytes is not None
         if not resource_exists:
